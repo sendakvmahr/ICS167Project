@@ -1,0 +1,40 @@
+
+<!doctype html>
+<html>
+<head>
+	<meta charset='UTF-8' />
+	<style>
+	input {border:1px solid #CCC;
+               margin:50px 0;
+               padding:0;}
+        #ip {line-height:20px}
+        #port {line-height:20px}
+		#body {width:100%; text-align: center;}
+		canvas {background: black; 
+                margin:auto; 
+                display: block;}
+        html {
+            background: #007777;
+        }
+	
+	</style>
+</head>
+
+<body>
+	<div id='body'>
+        Game ID/Nickname: <input type='text' id='nickname' name='nickname' value="placeholder">
+        Server ip: <input type='text' id='ip' name='ip' value="127.0.0.1">
+        Server port: <input type='text' id='port' name='port' value="8080">
+<!--         Game ID/Nickname: <input type='text' id='nickname' name='nickname'>
+        Server ip: <input type='text' id='ip' name='ip'>
+        Server port: <input type='text' id='port' name='port'> 
+ -->        <button type="button" id='cntBtn' onclick="connect();">Connect</button>
+        <button type="button" id='cntBtn' onclick="disconnect();">Disconnect</button>
+		<canvas id="canvas"></canvas>
+	</div>
+</body>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script src="fancywebsocket.js"></script>
+	<script src="main.js"></script>
+</html>
