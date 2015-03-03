@@ -12,10 +12,11 @@ class Game{
 	public:
 		Game(int w = 1000, int h=600);
 		~Game();
-		void getInput(int playerId,std::string input);
+		void paddlePosition(int playerId,std::string input);
 		void savePlayerID(int playerId, std::string id);
 		void CalculateLatency(int playerId, std::string ClientMessageTimes);
 		void Update();
+		void setOffset(int off);
 		int getHeight();
 		int getWidth();
 		Ball* getBall();
@@ -37,7 +38,7 @@ class Game{
 		TimeFormat CreateTimeFormat(std::string& msg);
 	private:
 		
-		int SCREEN_WIDTH, SCREEN_HEIGHT;
+		int SCREEN_WIDTH, SCREEN_HEIGHT, server_offset;
 		int pointsRight, pointsLeft;
 		Ball* _ball;
 		Paddle* _paddle_left;

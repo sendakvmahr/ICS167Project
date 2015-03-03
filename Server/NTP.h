@@ -19,8 +19,4 @@ public:
 	int getOffset();
 private:
 	int offset;
-
-
-
-
 };

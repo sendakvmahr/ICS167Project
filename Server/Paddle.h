@@ -13,6 +13,7 @@ class Paddle{
 		int getHeight();
 		int getWidth();
 		int getSpeed();
+		void setPosition(int x, int y);
 	private:
 		int height, width, posx, posy, speed, s_width, s_height;
 };

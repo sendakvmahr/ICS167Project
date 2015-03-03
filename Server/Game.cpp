@@ -17,28 +17,36 @@ Game::~Game(){
 
 }
 
-void Game::getInput(int playerId, std::string input){
-	// receive client messages
-	if (input.substr(0, 5) == "keyup") {
-		if (playerId == 0){
-			paddle1Moving = false;
+void Game::paddlePosition(int playerId, std::string input){
+	string posx = "", posy = "";
+	string space = " ";
+	if (input.substr(0,16) == "paddlePosition: "){
+		input.erase(0, 16);
+		for (int i = 0; i < input.size(); i++){
+			if (input[i] != space[0]){
+				posx += input[i];
+			}
+			else{
+				input.erase(0, i);
+				i = input.size()+1;
+			}
 		}
-		if (playerId == 1){
-			paddle2Moving = false;
+		for (int j = 0; j < input.size(); j++){
+				posy += input[j];
 		}
-	}
-	else if (input.substr(0, 7) == "keydown") {
-		if (playerId == 0){
-			paddle1Moving = true;
-			paddle1Up = input.find("up") < input.length();
-		}
-		if (playerId == 1){
-			paddle2Moving = true;
-			paddle2Up = input.find("up") < input.length();
-		}
+		int x = stoi(posx);
+		int y = stoi(posy);
+		if (x>(SCREEN_WIDTH / 2))
+			_paddle_right->setPosition(x, y);
+		else
+			_paddle_left->setPosition(x, y);
+		
 	}
 }
 
+void Game::setOffset(int off){
+	server_offset = off;
+}
 
 void Game::savePlayerID(int playerId, std::string id){
 	if (id.substr(0, 3) == "id:"){
@@ -61,7 +69,8 @@ void Game::CalculateLatency(int playerId, std::string ClientMessageTimes){
 	TimeFormat TimeSent = CreateTimeFormat(ClientMessageTimes);
 	
 	latency = ((TimeReceived.hour - TimeSent.hour) * 600000) + ((TimeReceived.min - TimeSent.min) * 60000) + ((TimeReceived.sec - TimeSent.sec) * 1000) + (TimeReceived.millisec - TimeSent.millisec);
-	latency -= 33;
+	latency -= 33; //33 is the fixed delay
+
 	cout << "Latency (client " << playerId << "):" << latency << " ms" << endl;
 }
 
@@ -111,13 +120,6 @@ void Game::Update(){
 		pointsLeft = 0;
 		_ball->Respawn();
 	}
-	if (paddle2Moving) {
-		_paddle_right->move(paddle2Up);
-	}
-	if (paddle1Moving) {
-		_paddle_left->move(paddle1Up);
-	}
-
 }
 
 int Game::getHeight(){

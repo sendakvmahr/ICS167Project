@@ -68,8 +68,12 @@ function GameState(dataString, isPrediction) {
 GameState.prototype.update = function(dataString, isPrediction) {
     var info = dataString.split(" ");
     this.receivedAt = new Date();
-    this.paddle1 = [Number(info[0]), Number(info[1])];
-    this.paddle2 = [Number(info[2]), Number(info[3])];
+    if (amPlayer1) {
+        this.paddle2 = [Number(info[2]), Number(info[3])];
+    }
+    else {
+        this.paddle1 = [Number(info[0]), Number(info[1])];
+    }
     this.ball = [Number(info[4]), Number(info[5])];
     this.scores = [info[6], info[7]];
     this.player1ID = info[8];
@@ -101,6 +105,7 @@ GameState.prototype.applyPrediction = function(prediction, timeElapsed) {
     result.paddle1 = [this.paddle1[0], this.paddle1[1] + prediction.paddle1Movement * proportion];
     result.paddle2 = [this.paddle2[0], this.paddle2[1] + prediction.paddle2Movement * proportion];
     result.ball = [this.ball[0] + prediction.ballMovement[0] * proportion,  this.ball[1] + prediction.ballMovement[1] * proportion];
+    result.scores = this.scores;
     result.player1ID = this.player1ID;
     result.player2ID = this.player2ID;
     return result;
@@ -205,9 +210,12 @@ function connect(){
         Server.connect();
         timeOfLastUpdate = new Date();
         applyInputs();
+        //console.log(latencyOffset);
         
         function update() {
             // Called based on time, does prediction if an update has not been received for long enough
+            
+        //send ("LatencyOffset: " + latencyOffset);
             var now = new Date();
             var timeSinceLastUpdate = msDifference(now, timeOfLastUpdate);
             if ((timeSinceLastUpdate > 33) && (gameStarted)) {
@@ -234,8 +242,7 @@ function connect(){
                     }
                 }
                 lastMovementSent = new Date();
-                send("paddlePosition: " + (amPlayer1 ? 10 : 270) + " " + (amPlayer1 ? currentGameState.paddle1[1] : currentGameState.paddle2[1]));
-                //"paddlePosition: 10 225"
+                send("paddlePosition: " + (amPlayer1 ? 10 : 970) + " " + (amPlayer1 ? currentGameState.paddle1[1] : currentGameState.paddle2[1]));
             }
             window.requestAnimationFrame(update);
         }

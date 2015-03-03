@@ -2,7 +2,7 @@
 
 void NTPServer::CalculateOffset(){
 
-	char    *hostname = (char *)"200.20.186.76";
+	char    *hostname = (char *)"timeapi.org/utc/now.json";//"200.20.186.76";
 	int portno = 123;     //NTP is port 123
 	int maxlen = 1024;        //check our buffers
 	int i;          // misc var i

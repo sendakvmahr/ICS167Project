@@ -35,3 +35,8 @@ int Paddle::getWidth(){
 int Paddle::getSpeed(){
 	return speed;
 }
+
+void Paddle::setPosition(int x, int y){
+	posx = x;
+	posy = y;
+}

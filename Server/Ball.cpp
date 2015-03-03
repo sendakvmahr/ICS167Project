@@ -80,12 +80,7 @@ bool Ball::CheckLimits(){
 }
 
 void Ball::Bounce(bool WallCollision){
-	hits++;
 	angle = rand() % 12 + 60;
-	if (hits >= 5){
-		speed += 0.5;
-		hits = 0;
-	}
 	dir_y<0 ? dir_y = -1 * speed*sin(angle*3.14 / 180.0f) : dir_y = speed*sin(angle*3.14 / 180.0f);
 	dir_x<0 ? dir_x = -1 * speed*cos(angle*3.14 / 180.0f) : dir_x = speed*cos(angle*3.14 / 180.0f);
 
@@ -111,10 +106,11 @@ int Ball::getWidth(){
 Ball::Direction Ball::getLastDirection(){
 	return ballDirection;
 }
+
+
 float Ball::get_dir_x(){
 	return dir_x;
 }
 float Ball::get_dir_y(){
 	return dir_y;
 }
-
