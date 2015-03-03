@@ -24,11 +24,11 @@ var lastMovementSent = new Date();
 var paddleSpeed = 5;
 
 // Time Variables
-/*
+
 var initialTime = Date.now();
 var initialSyncTime;
-var timeOffset;
-*/
+var timeOffset = 0;
+
 
 // Class for storing calculated movement data
 function PredictedMovements() {
@@ -65,7 +65,7 @@ function GameState(dataString, isPrediction) {
     this.prediction = isPrediction;
 }
 
-GameState.prototype.update = function(dataString) {
+GameState.prototype.update = function(dataString, isPrediction) {
     var info = dataString.split(" ");
     this.receivedAt = new Date();
     this.paddle1 = [Number(info[0]), Number(info[1])];
@@ -75,6 +75,7 @@ GameState.prototype.update = function(dataString) {
     this.player1ID = info[8];
     this.player2ID = info[9];
     this.sentAt = info[10];
+    this.prediction = isPrediction;
 }
             
 GameState.prototype.render = function(ctx, cw, ch) {
@@ -96,7 +97,7 @@ GameState.prototype.render = function(ctx, cw, ch) {
 
 GameState.prototype.applyPrediction = function(prediction, timeElapsed) {
     var result = new GameState("0 0 0 0 0 0 0 0 0 0 0 0", true);
-    var proportion = timeElapsed / prediction.timeDifference;
+    var proportion = timeElapsed / (prediction.timeDifference + 55);
     result.paddle1 = [this.paddle1[0], this.paddle1[1] + prediction.paddle1Movement * proportion];
     result.paddle2 = [this.paddle2[0], this.paddle2[1] + prediction.paddle2Movement * proportion];
     result.ball = [this.ball[0] + prediction.ballMovement[0] * proportion,  this.ball[1] + prediction.ballMovement[1] * proportion];
@@ -114,6 +115,7 @@ GameState.prototype.copy = function(gamestate2) {
     amPlayer1 = (this.player1ID === document.getElementById('nickname').value);
     this.player2ID = gamestate2.player2ID;
     this.sentAt = gamestate2.sentAt;
+    this.prediction = gamestate2.prediction;
 }
 
 // Time calculations
@@ -138,6 +140,7 @@ $.ajax({
     latencyOffset = - msDifference(initialSyncTime, initialTime);// "2012-03-06T02:18:25+00:00"
 });
 */
+
 // Server communication 
 function send( text ) {
     Server.send( 'message', text );
@@ -181,7 +184,7 @@ function connect(){
                 var receivedDate = new Date(appendForParsing + splitReply[3]);
                 var travelTimeToServer = msDifference(sentDate, receivedDate);
                 var travelTimeToClient = msDifference(now, receivedDate);
-                latency = (travelTimeToServer + travelTimeToClient) / 2;
+                latency = (travelTimeToServer + travelTimeToClient + timeOffset) / 2;
             }
             else if (payload.split(" ").length === 13){ // gamestate update
                 // Example paddle1x paddle1y paddle2x paddle2y ballx bally score1 score2 p1name p2name 13:51:29:892
@@ -191,7 +194,7 @@ function connect(){
                 var echoedTime = splitPayload[10];
                 send("Time:" + toCString(timeOfLastUpdate) + ": Time:" + echoedTime + ":");
                 pastGameState.copy(currentGameState);
-                currentGameState.update(payload);
+                currentGameState.update(payload, false);
                 predictedStateMovements.calculateMovements(pastGameState, currentGameState, splitPayload[11], splitPayload[12]);
                 currentGameState.render(ctx, canvas.width, canvas.height);
                 gameStarted = true;
@@ -200,6 +203,7 @@ function connect(){
         
         Server.connect();
         timeOfLastUpdate = new Date();
+        applyInputs();
         
         function update() {
             // Called based on time, does prediction if an update has not been received for long enough
@@ -210,6 +214,24 @@ function connect(){
                 predict.render(ctx, canvas.width, canvas.height);
             }
             if ((msDifference(new Date(), lastMovementSent) > 33) && (gameStarted)) {
+                if (amMoving) {
+                    if (amPlayer1) {                    
+                        if (movingUp) {
+                            currentGameState.paddle1[1] -= 5;
+                        }
+                        else {
+                            currentGameState.paddle1[1] += 5;
+                        }
+                    }
+                    else {
+                        if (movingUp) {
+                            currentGameState.paddle2[1] -= 5;
+                        }
+                        else {
+                            currentGameState.paddle2[1] += 5;
+                        }
+                    }
+                }
                 lastMovementSent = new Date();
                 send("paddlePosition: " + (amPlayer1 ? 10 : 270) + " " + (amPlayer1 ? currentGameState.paddle1[1] : currentGameState.paddle2[1]));
                 //"paddlePosition: 10 225"
@@ -225,30 +247,36 @@ function connect(){
     }
 }
 
-function startGame() {
+function applyInputs() {
     // up is 87, 38
     // down is 40, 83
     $(document).keydown(function(key) {
-        amMoving = true;
         var timeString = toCString(new Date());
         if (key.which === 87 || key.which  == 38) { // up
             // send("keydown up " + timeString);
+            console.log("kd up");
+            amMoving = true;
             movingUp = true;
         }
         else if (key.which === 40 || key.which  == 83) { // down
             // send("keydown down " + timeString);
+            console.log("kd down");
+            amMoving = true;
             movingUp = false;
         }
     });
     
     $(document).keyup(function(key) {
-        amMoving = false;
         var timeString = toCString(new Date());
         if (key.which === 87 || key.which  == 38) { // up
             // send("keyup up " + timeString);
+            console.log("kup up");
+            amMoving = false;
         }
         else if (key.which === 40 || key.which  == 83) { // down
             // send("keyup down " + timeString);
+            console.log("kup down");
+            amMoving = false;
         }
     });
 }

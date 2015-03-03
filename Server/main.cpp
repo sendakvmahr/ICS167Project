@@ -106,7 +106,7 @@ void updateHandler(){
 	static clock_t next = clock() + next_msg_timer;
 	clock_t current = clock();
 
-	int delay = 500; // delay in MS
+	int delay = 100; // delay in MS
 	
 	ReadMessages();
 	if (current >= next){
