@@ -129,17 +129,18 @@ function toCString (date) {
     // Format a date to send to c++ server
     return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + ":" + date.getMilliseconds()
 }
-/*
+
 $.ajax({
     url: 'http://www.timeapi.org/utc/now.json',
     dataType: 'jsonp'
 })
 .done(function(response) {
+    // to sync to Pacific time, += 8 hours
     initialSyncTime = new Date(response.dateString);
+    initialSyncTime.setHours(initialSyncTime.getHours() - 8)
     initialTime = new Date();
     latencyOffset = - msDifference(initialSyncTime, initialTime);// "2012-03-06T02:18:25+00:00"
-});
-*/
+}); 
 
 // Server communication 
 function send( text ) {
