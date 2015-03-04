@@ -9,6 +9,7 @@ Game::Game(int w, int h){
 	pointsLeft = 0;
 	_ball = new Ball(SCREEN_WIDTH, SCREEN_HEIGHT);
 	_paddle_left = new Paddle(true, SCREEN_WIDTH, SCREEN_HEIGHT);
+	_paddle_right = new Paddle(false, SCREEN_WIDTH, SCREEN_HEIGHT);
 	g_state = Game::Waiting;
 	paddle1Moving = false;
 	paddle2Moving = false;

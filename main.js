@@ -179,15 +179,15 @@ function connect(){
 
         //Log any messages sent from server
         Server.bind('message', function( payload ) {
-            console.log(payload);
-            var isLatencyCalculation = payload.slice(0, 8) === "echo key";
+            var isLatencyCalculation = payload.slice(0, 8) === "echo pad";
             if (isLatencyCalculation) { // echo for a keyboard - use times to calculate latencyt
                 var now = getSyncedTime();
                 // Just to make everything a date object - will mess up at midnight for 1 frame
                 var appendForParsing = now.getFullYear() + "/" + now.getMonth() + "/" + now.getDate() + " "; 
                 var splitReply = payload.split(" ");
-                var sentDate = new Date(appendForParsing + splitReply[4]);
-                var receivedDate = new Date(appendForParsing + splitReply[3]);
+                //console.log(splitReply);
+                var sentDate = new Date(appendForParsing + splitReply[5]);
+                var receivedDate = new Date(appendForParsing + splitReply[4]);
                 var travelTimeToServer = msDifference(sentDate, receivedDate);
                 var travelTimeToClient = msDifference(now, receivedDate);
                 latency = (travelTimeToServer + travelTimeToClient + timeOffset) / 2;
@@ -206,7 +206,7 @@ function connect(){
                 gameStarted = true;
             }
         });
-        
+            
         Server.connect();
         timeOfLastUpdate = getSyncedTime();
         applyInputs();
@@ -240,7 +240,7 @@ function connect(){
                     }
                 }
                 lastMovementSent = getSyncedTime();
-                send("paddlePosition: " + (amPlayer1 ? 10 : 970) + " " + (amPlayer1 ? currentGameState.paddle1[1] : currentGameState.paddle2[1]));
+                send("paddlePosition: " + (amPlayer1 ? 10 : 970) + " " + (amPlayer1 ? currentGameState.paddle1[1] : currentGameState.paddle2[1]) +" " + toCString(lastMovementSent));
             }
             window.requestAnimationFrame(update);
         }
