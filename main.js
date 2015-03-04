@@ -16,20 +16,33 @@ var timeOfLastUpdate = 0;
 var gameStarted = false;
 var amPlayer1 = false;
 var pastGameState = new GameState("0 0 0 0 0 0 0 0 0 0 0 0", false);
-var currentGameState = new GameState("0 0 0 0 0 0 0 0 0 0 0 0", false);
+var currentGameState = new GameState("10 225 970 225 0 0 0 0 0 0 0", false);
 var predictedStateMovements = new PredictedMovements();
 var amMoving = false;
 var movingUp = false;
-var lastMovementSent = new Date();
 var paddleSpeed = 5;
 
-// Time Variables
-
-var initialTime = Date.now();
-var initialSyncTime;
+// Time Variables;
 var timeOffset = 0;
+$.ajax({
+    url: 'http://www.timeapi.org/utc/now.json',
+    dataType: 'jsonp'
+})
+.done(function(response) {
+    // to sync to Pacific time, += 8 hours
+    var initialSyncTime = new Date(response.dateString);
+    initialSyncTime.setHours(initialSyncTime.getHours() - 8);
+    var initialTime = new Date();
+    timeOffset = - msDifference(initialSyncTime, initialTime);// "2012-03-06T02:18:25+00:00"
+}); 
 
+function getSyncedTime() {
+    var result = new Date();
+    result.setMilliseconds(result.getMilliseconds() - timeOffset); 
+    return result;
+}
 
+var lastMovementSent = getSyncedTime();
 // Class for storing calculated movement data
 function PredictedMovements() {
     this.paddle1Movement = 0;
@@ -46,14 +59,10 @@ PredictedMovements.prototype.calculateMovements = function (oldState, newState, 
     this.ballMovement = [ball_dirx, ball_diry];
 }
 
-PredictedMovements.update = function(ballx, bally) {
-    
-}
-
 // Class for storing the information in a game state
 function GameState(dataString, isPrediction) {
     var info = dataString.split(" ");
-    this.receivedAt = new Date();
+    this.receivedAt = getSyncedTime();
     this.paddle1 = [Number(info[0]), Number(info[1])];
     this.paddle2 = [Number(info[2]), Number(info[3])];
     this.ball = [Number(info[4]), Number(info[5])];
@@ -67,13 +76,14 @@ function GameState(dataString, isPrediction) {
 
 GameState.prototype.update = function(dataString, isPrediction) {
     var info = dataString.split(" ");
-    this.receivedAt = new Date();
+    this.receivedAt = getSyncedTime();
     if (amPlayer1) {
         this.paddle2 = [Number(info[2]), Number(info[3])];
     }
     else {
-        this.paddle1 = [Number(info[0]), Number(info[1])];
+       this.paddle1 = [Number(info[0]), Number(info[1])];
     }
+//    this.paddle2[0] = canvas.width - 30;
     this.ball = [Number(info[4]), Number(info[5])];
     this.scores = [info[6], info[7]];
     this.player1ID = info[8];
@@ -101,6 +111,7 @@ GameState.prototype.render = function(ctx, cw, ch) {
 
 GameState.prototype.applyPrediction = function(prediction, timeElapsed) {
     var result = new GameState("0 0 0 0 0 0 0 0 0 0 0 0", true);
+    // Example paddle1x paddle1y paddle2x paddle2y ballx bally score1 score22 p1name p2name 13:51:29:892
     var proportion = timeElapsed / (prediction.timeDifference + 55);
     result.paddle1 = [this.paddle1[0], this.paddle1[1] + prediction.paddle1Movement * proportion];
     result.paddle2 = [this.paddle2[0], this.paddle2[1] + prediction.paddle2Movement * proportion];
@@ -135,18 +146,6 @@ function toCString (date) {
     return date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + ":" + date.getMilliseconds()
 }
 
-$.ajax({
-    url: 'http://www.timeapi.org/utc/now.json',
-    dataType: 'jsonp'
-})
-.done(function(response) {
-    // to sync to Pacific time, += 8 hours
-    initialSyncTime = new Date(response.dateString);
-    initialSyncTime.setHours(initialSyncTime.getHours() - 8)
-    initialTime = new Date();
-    latencyOffset = - msDifference(initialSyncTime, initialTime);// "2012-03-06T02:18:25+00:00"
-}); 
-
 // Server communication 
 function send( text ) {
     Server.send( 'message', text );
@@ -180,9 +179,10 @@ function connect(){
 
         //Log any messages sent from server
         Server.bind('message', function( payload ) {
+            console.log(payload);
             var isLatencyCalculation = payload.slice(0, 8) === "echo key";
             if (isLatencyCalculation) { // echo for a keyboard - use times to calculate latencyt
-                var now = new Date();
+                var now = getSyncedTime();
                 // Just to make everything a date object - will mess up at midnight for 1 frame
                 var appendForParsing = now.getFullYear() + "/" + now.getMonth() + "/" + now.getDate() + " "; 
                 var splitReply = payload.split(" ");
@@ -193,9 +193,9 @@ function connect(){
                 latency = (travelTimeToServer + travelTimeToClient + timeOffset) / 2;
             }
             else if (payload.split(" ").length === 13){ // gamestate update
-                // Example paddle1x paddle1y paddle2x paddle2y ballx bally score1 score2 p1name p2name 13:51:29:892
+                // Example paddle1x paddle1y paddle2x paddle2y ballx bally score1 score22 p1name p2name 13:51:29:892
                 // Numbers at the end are the time the server sent the update out
-                var timeOfLastUpdate = new Date();
+                var timeOfLastUpdate = getSyncedTime();
                 var splitPayload = payload.split(" ");
                 var echoedTime = splitPayload[10];
                 send("Time:" + toCString(timeOfLastUpdate) + ": Time:" + echoedTime + ":");
@@ -208,21 +208,19 @@ function connect(){
         });
         
         Server.connect();
-        timeOfLastUpdate = new Date();
+        timeOfLastUpdate = getSyncedTime();
         applyInputs();
-        //console.log(latencyOffset);
         
         function update() {
             // Called based on time, does prediction if an update has not been received for long enough
-            
         //send ("LatencyOffset: " + latencyOffset);
-            var now = new Date();
+            var now = getSyncedTime();
             var timeSinceLastUpdate = msDifference(now, timeOfLastUpdate);
             if ((timeSinceLastUpdate > 33) && (gameStarted)) {
                 var predict = currentGameState.applyPrediction(predictedStateMovements, timeSinceLastUpdate);
                 predict.render(ctx, canvas.width, canvas.height);
             }
-            if ((msDifference(new Date(), lastMovementSent) > 33) && (gameStarted)) {
+            if ((msDifference(getSyncedTime(), lastMovementSent) > 33) && (gameStarted)) {
                 if (amMoving) {
                     if (amPlayer1) {                    
                         if (movingUp) {
@@ -241,7 +239,7 @@ function connect(){
                         }
                     }
                 }
-                lastMovementSent = new Date();
+                lastMovementSent = getSyncedTime();
                 send("paddlePosition: " + (amPlayer1 ? 10 : 970) + " " + (amPlayer1 ? currentGameState.paddle1[1] : currentGameState.paddle2[1]));
             }
             window.requestAnimationFrame(update);
@@ -259,31 +257,31 @@ function applyInputs() {
     // up is 87, 38
     // down is 40, 83
     $(document).keydown(function(key) {
-        var timeString = toCString(new Date());
+        var timeString = toCString(getSyncedTime());
         if (key.which === 87 || key.which  == 38) { // up
             // send("keydown up " + timeString);
-            console.log("kd up");
+            // console.log("kd up");
             amMoving = true;
             movingUp = true;
         }
         else if (key.which === 40 || key.which  == 83) { // down
             // send("keydown down " + timeString);
-            console.log("kd down");
+            // console.log("kd down");
             amMoving = true;
             movingUp = false;
         }
     });
     
     $(document).keyup(function(key) {
-        var timeString = toCString(new Date());
+        var timeString = toCString(getSyncedTime());
         if (key.which === 87 || key.which  == 38) { // up
             // send("keyup up " + timeString);
-            console.log("kup up");
+            // console.log("kup up");
             amMoving = false;
         }
         else if (key.which === 40 || key.which  == 83) { // down
             // send("keyup down " + timeString);
-            console.log("kup down");
+            // console.log("kup down");
             amMoving = false;
         }
     });
