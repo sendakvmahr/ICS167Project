@@ -190,7 +190,7 @@ function connect(){
                 var receivedDate = new Date(appendForParsing + splitReply[4]);
                 var travelTimeToServer = msDifference(sentDate, receivedDate);
                 var travelTimeToClient = msDifference(now, receivedDate);
-                latency = (travelTimeToServer + travelTimeToClient + timeOffset) / 2;
+                latency = Math.abs(travelTimeToServer + travelTimeToClient + timeOffset) / 2;
             }
             else if (payload.split(" ").length === 13){ // gamestate update
                 // Example paddle1x paddle1y paddle2x paddle2y ballx bally score1 score22 p1name p2name 13:51:29:892
@@ -225,17 +225,25 @@ function connect(){
                     if (amPlayer1) {                    
                         if (movingUp) {
                             currentGameState.paddle1[1] -= 5;
+                            if (currentGameState.paddle1[1] < 0) 
+                                currentGameState.paddle1[1] = 0;
                         }
                         else {
                             currentGameState.paddle1[1] += 5;
+                            if (currentGameState.paddle1[1] > canvas.height * 3 / 4) 
+                                currentGameState.paddle1[1] = canvas.height * 3 / 4;
                         }
                     }
                     else {
                         if (movingUp) {
                             currentGameState.paddle2[1] -= 5;
+                            if (currentGameState.paddle2[1] < 0) 
+                                currentGameState.paddle2[1] = 0;
                         }
                         else {
                             currentGameState.paddle2[1] += 5;
+                            if (currentGameState.paddle2[1] > canvas.height * 3 / 4) 
+                                currentGameState.paddle2[1] = canvas.height * 3 / 4;
                         }
                     }
                 }
