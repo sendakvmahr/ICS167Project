@@ -24,17 +24,17 @@ var paddleSpeed = 5;
 
 // Time Variables;
 var timeOffset = 0;
-$.ajax({
-    url: 'http://www.timeapi.org/utc/now.json',
-    dataType: 'jsonp'
-})
-.done(function(response) {
-    // to sync to Pacific time, += 8 hours
-    var initialSyncTime = new Date(response.dateString);
-    initialSyncTime.setHours(initialSyncTime.getHours() - 8);
-    var initialTime = new Date();
-    timeOffset = - msDifference(initialSyncTime, initialTime);// "2012-03-06T02:18:25+00:00"
-}); 
+// $.ajax({
+    // url: 'http://www.timeapi.org/utc/now.json',
+    // dataType: 'jsonp'
+// })
+// .done(function(response) {
+    // // to sync to Pacific time, += 8 hours
+    // var initialSyncTime = new Date(response.dateString);
+    // initialSyncTime.setHours(initialSyncTime.getHours() - 8);
+    // var initialTime = new Date();
+    // timeOffset = - msDifference(initialSyncTime, initialTime);
+// }); 
 
 function getSyncedTime() {
     var result = new Date();
@@ -83,7 +83,6 @@ GameState.prototype.update = function(dataString, isPrediction) {
     else {
        this.paddle1 = [Number(info[0]), Number(info[1])];
     }
-//    this.paddle2[0] = canvas.width - 30;
     this.ball = [Number(info[4]), Number(info[5])];
     this.scores = [info[6], info[7]];
     this.player1ID = info[8];
@@ -94,6 +93,7 @@ GameState.prototype.update = function(dataString, isPrediction) {
             
 GameState.prototype.render = function(ctx, cw, ch) {
     ctx.clearRect(0, 0, cw, ch);
+    // Debugging
     // if (this.prediction) {
         // ctx.fillStyle = "#FF0000";
         // ctx.fillRect(0, 0, cw, ch);
@@ -106,7 +106,7 @@ GameState.prototype.render = function(ctx, cw, ch) {
     ctx.fillText(this.player1ID, 200, 50);
     ctx.fillText(this.scores[1], cw - 190, 100);
     ctx.fillText(this.player2ID, cw - 190, 50);
-    ctx.fillText(latency, 450, 50);
+    $("#latency").html(latency);
 }
 
 GameState.prototype.applyPrediction = function(prediction, timeElapsed) {
@@ -180,12 +180,25 @@ function connect(){
         //Log any messages sent from server
         Server.bind('message', function( payload ) {
             var isLatencyCalculation = payload.slice(0, 8) === "echo pad";
-            if (isLatencyCalculation) { // echo for a keyboard - use times to calculate latencyt
+            if (payload === "Ready") { // Server is ready
+                var now = new Date();
+                send("Ping: " + toCString(now));
+            }
+            else if (payload.slice(0, 4) === "Ping") {
+                var splitReply = payload.split(" ");
+                var clientReceive = new Date();
+                var appendForParsing = clientReceive.getFullYear() + "/" + clientReceive.getMonth() + "/" + clientReceive.getDate() + " "; 
+                var clientSent = new Date(appendForParsing + splitReply[1]);
+                var serverReceive = new Date(appendForParsing + splitReply[2]);
+                var serverSent = new Date(appendForParsing + splitReply[3]);
+                latency = ((clientReceive - clientSent) - (serverReceive - serverSent)) / 2
+                timeOffset = (serverReceive - clientSent) - latency;
+            }                
+            else if (isLatencyCalculation) { // echo for a keyboard - use times to calculate latencyt
                 var now = getSyncedTime();
                 // Just to make everything a date object - will mess up at midnight for 1 frame
                 var appendForParsing = now.getFullYear() + "/" + now.getMonth() + "/" + now.getDate() + " "; 
                 var splitReply = payload.split(" ");
-                //console.log(splitReply);
                 var sentDate = new Date(appendForParsing + splitReply[5]);
                 var receivedDate = new Date(appendForParsing + splitReply[4]);
                 var travelTimeToServer = msDifference(sentDate, receivedDate);
@@ -213,7 +226,6 @@ function connect(){
         
         function update() {
             // Called based on time, does prediction if an update has not been received for long enough
-        //send ("LatencyOffset: " + latencyOffset);
             var now = getSyncedTime();
             var timeSinceLastUpdate = msDifference(now, timeOfLastUpdate);
             if ((timeSinceLastUpdate > 33) && (gameStarted)) {
@@ -252,9 +264,7 @@ function connect(){
             }
             window.requestAnimationFrame(update);
         }
-        
         update();
-        
     }
     else {
         alert("Please fill out all the required fields.");
@@ -267,14 +277,10 @@ function applyInputs() {
     $(document).keydown(function(key) {
         var timeString = toCString(getSyncedTime());
         if (key.which === 87 || key.which  == 38) { // up
-            // send("keydown up " + timeString);
-            // console.log("kd up");
             amMoving = true;
             movingUp = true;
         }
         else if (key.which === 40 || key.which  == 83) { // down
-            // send("keydown down " + timeString);
-            // console.log("kd down");
             amMoving = true;
             movingUp = false;
         }
@@ -282,14 +288,10 @@ function applyInputs() {
     
     $(document).keyup(function(key) {
         var timeString = toCString(getSyncedTime());
-        if (key.which === 87 || key.which  == 38) { // up
-            // send("keyup up " + timeString);
-            // console.log("kup up");
+        if (key.which === 87 || key.which  == 38 || key.which === 40 || key.which  == 83) { // up
             amMoving = false;
         }
         else if (key.which === 40 || key.which  == 83) { // down
-            // send("keyup down " + timeString);
-            // console.log("kup down");
             amMoving = false;
         }
     });
